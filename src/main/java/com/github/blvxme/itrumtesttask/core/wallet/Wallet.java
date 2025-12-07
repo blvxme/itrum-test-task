@@ -9,7 +9,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
@@ -22,20 +21,17 @@ public class Wallet {
     @Getter
     private UUID id;
 
+    @SuppressWarnings("JpaAttributeTypeInspection")
     @Column(name = "balance")
     @Getter
-    private BigDecimal balance;
+    private Money balance;
 
-    public void updateBalance(BigDecimal amount) throws InvalidBalanceException {
-        BigDecimal newBalance = balance.add(amount);
-        if (isBalanceInvalid(newBalance)) {
+    public void updateBalance(Money amount) throws InvalidBalanceException {
+        Money newBalance = balance.add(amount);
+        if (newBalance.lessThan(Money.ZERO)) {
             throw new InvalidBalanceException(balance, amount, newBalance);
         }
 
         balance = newBalance;
-    }
-
-    private boolean isBalanceInvalid(BigDecimal balance) {
-        return balance.compareTo(BigDecimal.ZERO) < 0;
     }
 }

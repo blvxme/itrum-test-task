@@ -1,5 +1,6 @@
 package com.github.blvxme.itrumtesttask.app.wallet;
 
+import com.github.blvxme.itrumtesttask.core.wallet.Money;
 import com.github.blvxme.itrumtesttask.core.wallet.exception.InvalidBalanceException;
 import com.github.blvxme.itrumtesttask.app.wallet.exception.WalletNotFoundException;
 import com.github.blvxme.itrumtesttask.core.wallet.Wallet;
@@ -9,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
@@ -18,13 +18,13 @@ public class WalletService {
     private final WalletRepository walletRepository;
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public BigDecimal getWalletBalance(UUID id) throws WalletNotFoundException {
+    public Money getWalletBalance(UUID id) throws WalletNotFoundException {
         Wallet wallet = getWalletOrThrow(id);
         return wallet.getBalance();
     }
 
     @Transactional(isolation = Isolation.REPEATABLE_READ)
-    public BigDecimal updateWalletBalance(UUID id, BigDecimal amount) throws WalletNotFoundException, InvalidBalanceException {
+    public Money updateWalletBalance(UUID id, Money amount) throws WalletNotFoundException, InvalidBalanceException {
         Wallet wallet = getWalletOrThrow(id);
         wallet.updateBalance(amount);
         return walletRepository.save(wallet).getBalance();

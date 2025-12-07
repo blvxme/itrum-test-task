@@ -1,5 +1,6 @@
 package com.github.blvxme.itrumtesttask;
 
+import com.github.blvxme.itrumtesttask.core.wallet.Money;
 import com.github.blvxme.itrumtesttask.core.wallet.Wallet;
 import com.github.blvxme.itrumtesttask.core.wallet.WalletRepository;
 import com.github.blvxme.itrumtesttask.infra.api.error.ErrorResponse;
@@ -14,7 +15,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,7 +64,7 @@ public class WalletIntegrationTest extends BasicIntegrationTest {
 
         assertThat(response).isNotNull();
         assertThat(response.walletId().toString()).isEqualTo(walletId.toString());
-        assertThat(response.balance()).isEqualByComparingTo(fixture.fakeWallet().getBalance());
+        assertThat(response.balance()).isEqualTo(fixture.fakeWallet().getBalance().toBigDecimal());
     }
 
     @Test
@@ -116,8 +116,8 @@ public class WalletIntegrationTest extends BasicIntegrationTest {
 
         assertThat(response).isNotNull();
         assertThat(response.walletId().toString()).isEqualTo(walletId.toString());
-        assertThat(response.balance()).isEqualByComparingTo(fixture.fakeWallet().getBalance().add(BigDecimal.ONE));
-        assertThat(response.balance()).isEqualByComparingTo(walletRepository.findById(walletId).orElseThrow().getBalance());
+        assertThat(response.balance()).isEqualByComparingTo(fixture.fakeWallet().getBalance().add(new Money(BigDecimal.ONE)).toBigDecimal());
+        assertThat(response.balance()).isEqualByComparingTo(walletRepository.findById(walletId).orElseThrow().getBalance().toBigDecimal());
     }
 
     @Test
@@ -125,7 +125,7 @@ public class WalletIntegrationTest extends BasicIntegrationTest {
     public void shouldDecreaseBalanceWhenWithdrawingFormExistingWallet() throws Exception {
         UUID walletId = UUID.randomUUID();
         BigDecimal initialWalletBalance = new BigDecimal("1000.00");
-        Wallet wallet = new Wallet(walletId, initialWalletBalance);
+        Wallet wallet = new Wallet(walletId, new Money(initialWalletBalance));
         walletRepository.save(wallet);
 
         BigDecimal difference = new BigDecimal("700.30");
@@ -151,18 +151,18 @@ public class WalletIntegrationTest extends BasicIntegrationTest {
         assertThat(response).isNotNull();
         assertThat(response.walletId().toString()).isEqualTo(walletId.toString());
         assertThat(response.balance()).isEqualByComparingTo(newWalletBalance);
-        assertThat(response.balance()).isEqualByComparingTo(walletRepository.findById(walletId).orElseThrow().getBalance());
+        assertThat(response.balance()).isEqualByComparingTo(walletRepository.findById(walletId).orElseThrow().getBalance().toBigDecimal());
     }
 
     @Test
     public void shouldReturnBadRequestWhenWithdrawalResultsInNegativeBalance() throws Exception {
         UUID walletId = fixture.fakeWallet().getId();
 
-        BigDecimal initialWalletBalance = fixture.fakeWallet().getBalance().setScale(2, RoundingMode.UNNECESSARY);
-        BigDecimal difference = BigDecimal.TEN;
-        BigDecimal newWalletBalance = initialWalletBalance.subtract(difference).setScale(2, RoundingMode.UNNECESSARY);
+        Money initialWalletBalance = fixture.fakeWallet().getBalance();
+        Money difference = new Money(BigDecimal.TEN);
+        Money newWalletBalance = initialWalletBalance.subtract(difference);
 
-        WalletRequest request = new WalletRequest(walletId, OperationType.WITHDRAW, difference);
+        WalletRequest request = new WalletRequest(walletId, OperationType.WITHDRAW, difference.toBigDecimal());
         String path = "/api/v1/wallets";
 
         MvcResult result = mockMvc
